@@ -27,7 +27,7 @@ const storage = {
 const styles = {
   container: {
     minHeight: '100vh',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    fontFamily: '"Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     backgroundImage: 'url(https://res.cloudinary.com/dijzl4dmq/image/upload/v1770894642/Frame_1000005429_stqrl7.jpg)',
     backgroundSize: 'cover',
     backgroundPosition: 'top center',
