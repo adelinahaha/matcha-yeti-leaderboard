@@ -23,6 +23,14 @@ const storage = {
   }
 };
 
+const getLeaderboardColor = (index) => {
+  if (index === 0) return { bg: '#166534', border: '#14532d', text: 'white' };
+  if (index === 1) return { bg: '#16a34a', border: '#15803d', text: 'white' };
+  if (index === 2) return { bg: '#22c55e', border: '#16a34a', text: 'white' };
+  if (index < 10) return { bg: '#86efac', border: '#4ade80', text: '#166534' };
+  return { bg: 'white', border: '#d1fae5', text: '#166534' };
+};
+
 const styles = {
   container: {
     minHeight: '100vh',
@@ -163,14 +171,6 @@ const styles = {
   }
 };
 
-const getLeaderboardColor = (index) => {
-  if (index === 0) return { bg: '#166534', border: '#14532d' }; // Dark green #1
-  if (index === 1) return { bg: '#16a34a', border: '#15803d' }; // Medium green #2
-  if (index === 2) return { bg: '#22c55e', border: '#16a34a' }; // Bright green #3
-  if (index < 10) return { bg: '#86efac', border: '#4ade80' }; // Light green #4-10
-  return { bg: 'white', border: '#d1fae5' }; // White #11+
-};
-
 const MatchaYetiLeaderboard = () => {
   const [view, setView] = useState('landing');
   const [submissions, setSubmissions] = useState([]);
@@ -185,7 +185,24 @@ const MatchaYetiLeaderboard = () => {
 
   useEffect(() => {
     loadData();
+    
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      if (hash === 'leaderboard') setView('leaderboard');
+      else if (hash === 'admin') setView('admin');
+      else setView('landing');
+    };
+    
+    handleHashChange();
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
+
+  const changeView = (newView) => {
+    if (newView === 'leaderboard') window.location.hash = 'leaderboard';
+    else if (newView === 'admin') window.location.hash = 'admin';
+    else window.location.hash = '';
+  };
 
   const loadData = () => {
     try {
@@ -397,7 +414,7 @@ const MatchaYetiLeaderboard = () => {
             Access Admin Panel
           </button>
           <button
-            onClick={() => setView('landing')}
+            onClick={() => changeView('landing')}
             style={{...styles.button, background: 'white', color: '#16a34a', marginBottom: 0}}
           >
             Back to Landing
@@ -414,7 +431,7 @@ const MatchaYetiLeaderboard = () => {
       <div style={styles.container}>
         <nav style={styles.nav}>
           <div style={styles.navInner}>
-            <button onClick={() => setView('leaderboard')} style={styles.leaderboardButton}>
+            <button onClick={() => changeView('leaderboard')} style={styles.leaderboardButton}>
               VIEW LEADERBOARD
             </button>
             <a href="https://matcha.xyz/" target="_blank" rel="noopener noreferrer">
@@ -460,7 +477,7 @@ const MatchaYetiLeaderboard = () => {
           <div style={{...styles.card, background: '#fee2e2', borderColor: '#dc2626'}}>
             <h3 style={{fontSize: '18px', fontWeight: 'bold', color: '#dc2626', marginBottom: '12px'}}>⚠️ Danger Zone</h3>
             <p style={{fontSize: '13px', color: '#7f1d1d', marginBottom: '12px'}}>
-              Reset all data (submissions, winners, pending entries). Requires code: RESET2026
+              Reset all data (submissions, winners, pending). Code: RESET2026
             </p>
             <button
               onClick={resetAllData}
@@ -472,7 +489,7 @@ const MatchaYetiLeaderboard = () => {
 
           <div style={styles.card}>
             <h3 style={{fontSize: '18px', fontWeight: 'bold', color: '#166534', marginBottom: '16px'}}>
-              Pending Submissions ({pendingSubmissions.length})
+              Pending ({pendingSubmissions.length})
             </h3>
             {pendingSubmissions.length === 0 ? (
               <p style={{color: '#6b7280'}}>No pending submissions</p>
@@ -517,8 +534,8 @@ const MatchaYetiLeaderboard = () => {
         </div>
 
         <div style={styles.footer}>
-          <button onClick={() => setView('landing')} style={styles.adminLink}>
-            ← Back to Site
+          <button onClick={() => changeView('landing')} style={styles.adminLink}>
+            ← Back
           </button>
         </div>
       </div>
@@ -530,7 +547,7 @@ const MatchaYetiLeaderboard = () => {
       <div style={styles.container}>
         <nav style={styles.nav}>
           <div style={styles.navInner}>
-            <button onClick={() => setView('landing')} style={{...styles.leaderboardButton, background: '#374151'}}>
+            <button onClick={() => changeView('landing')} style={{...styles.leaderboardButton, background: '#374151'}}>
               ← HOME
             </button>
             <a href="https://matcha.xyz/" target="_blank" rel="noopener noreferrer">
@@ -546,7 +563,7 @@ const MatchaYetiLeaderboard = () => {
             {leaderboard.length === 0 ? (
               <div style={{textAlign: 'center', padding: '32px 0'}}>
                 <p style={{fontSize: '16px', color: '#6b7280', marginBottom: '16px'}}>The Yeti awaits the first sighting...</p>
-                <button onClick={() => setView('landing')} style={{...styles.button, background: '#16a34a', color: 'white', border: '2px solid #16a34a', width: 'auto', padding: '12px 24px', margin: '0 auto'}}>
+                <button onClick={() => changeView('landing')} style={{...styles.button, background: '#16a34a', color: 'white', border: '2px solid #16a34a', width: 'auto', padding: '12px 24px', margin: '0 auto'}}>
                   Be The First →
                 </button>
               </div>
@@ -554,7 +571,6 @@ const MatchaYetiLeaderboard = () => {
               <div>
                 {leaderboard.map((user, index) => {
                   const colors = getLeaderboardColor(index);
-                  const textColor = index < 3 ? 'white' : '#166534';
                   
                   return (
                     <div
@@ -572,23 +588,23 @@ const MatchaYetiLeaderboard = () => {
                       }}
                     >
                       <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-                        <div style={{fontSize: '24px', fontWeight: 'bold', color: textColor, minWidth: '36px'}}>
+                        <div style={{fontSize: '24px', fontWeight: 'bold', color: colors.text, minWidth: '36px'}}>
                           #{index + 1}
                         </div>
                         <div>
-                          <p style={{fontSize: '16px', fontWeight: 'bold', color: textColor}}>{user.username}</p>
+                          <p style={{fontSize: '16px', fontWeight: 'bold', color: colors.text}}>{user.username}</p>
                           <div style={{display: 'flex', gap: '6px', marginTop: '4px', flexWrap: 'wrap'}}>
-                            <span style={{fontSize: '10px', background: 'rgba(255,255,255,0.3)', padding: '2px 6px', borderRadius: '4px', color: textColor}}>
+                            <span style={{fontSize: '10px', background: 'rgba(255,255,255,0.3)', padding: '2px 6px', borderRadius: '4px', color: colors.text}}>
                               {user.posts.length} post{user.posts.length > 1 ? 's' : ''}
                             </span>
-                            {user.hasYeti && <span style={{fontSize: '10px', background: 'rgba(255,255,255,0.3)', padding: '2px 6px', borderRadius: '4px', color: textColor}}>🏔️</span>}
-                            {user.isCreative && <span style={{fontSize: '10px', background: 'rgba(255,255,255,0.3)', padding: '2px 6px', borderRadius: '4px', color: textColor}}>⚡</span>}
+                            {user.hasYeti && <span style={{fontSize: '10px', background: 'rgba(255,255,255,0.3)', padding: '2px 6px', borderRadius: '4px', color: colors.text}}>🏔️</span>}
+                            {user.isCreative && <span style={{fontSize: '10px', background: 'rgba(255,255,255,0.3)', padding: '2px 6px', borderRadius: '4px', color: colors.text}}>⚡</span>}
                           </div>
                         </div>
                       </div>
                       <div style={{textAlign: 'right'}}>
-                        <p style={{fontSize: '24px', fontWeight: 'bold', color: textColor}}>{user.totalPoints}</p>
-                        <p style={{fontSize: '11px', color: textColor, opacity: 0.8}}>pts</p>
+                        <p style={{fontSize: '24px', fontWeight: 'bold', color: colors.text}}>{user.totalPoints}</p>
+                        <p style={{fontSize: '11px', color: colors.text, opacity: 0.8}}>pts</p>
                       </div>
                     </div>
                   );
@@ -599,7 +615,7 @@ const MatchaYetiLeaderboard = () => {
         </div>
 
         <div style={styles.footer}>
-          <button onClick={() => setView('admin')} style={styles.adminLink}>
+          <button onClick={() => changeView('admin')} style={styles.adminLink}>
             Admin
           </button>
         </div>
@@ -611,7 +627,7 @@ const MatchaYetiLeaderboard = () => {
     <div style={styles.container}>
       <nav style={styles.nav}>
         <div style={styles.navInner}>
-          <button onClick={() => setView('leaderboard')} style={styles.leaderboardButton}>
+          <button onClick={() => changeView('leaderboard')} style={styles.leaderboardButton}>
             VIEW LEADERBOARD
           </button>
           <a href="https://matcha.xyz/" target="_blank" rel="noopener noreferrer">
@@ -738,7 +754,7 @@ const MatchaYetiLeaderboard = () => {
       </div>
 
       <div style={styles.footer}>
-        <button onClick={() => setView('admin')} style={styles.adminLink}>
+        <button onClick={() => changeView('admin')} style={styles.adminLink}>
           Admin
         </button>
       </div>
@@ -794,7 +810,7 @@ const PendingSubmissionCard = ({ submission, pastPosts, onApprove, onReject }) =
       <div style={{marginBottom: '12px'}}>
         <p style={{fontWeight: 'bold', color: '#166534', fontSize: '16px'}}>{submission.username}</p>
         <a href={submission.postUrl} target="_blank" rel="noopener noreferrer" style={{fontSize: '12px', color: '#16a34a'}}>
-          View Post →
+          View Current Post →
         </a>
         <p style={{fontSize: '11px', color: '#6b7280', marginTop: '4px'}}>
           Submitted: {new Date(submission.timestamp).toLocaleString()}
@@ -805,7 +821,7 @@ const PendingSubmissionCard = ({ submission, pastPosts, onApprove, onReject }) =
             <p style={{fontSize: '11px', fontWeight: 'bold', color: '#92400e', marginBottom: '6px'}}>
               📋 Past approved posts: {pastPosts.length}
             </p>
-            {pastPosts.map((post, i) => (
+            {pastPosts.map((post) => (
               <div key={post.id} style={{fontSize: '10px', color: '#92400e', marginBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                 <span>• {post.points} pts - {new Date(post.timestamp).toLocaleDateString()}</span>
                 <a href={post.postUrl} target="_blank" rel="noopener noreferrer" style={{color: '#92400e', textDecoration: 'underline', fontSize: '10px'}}>
