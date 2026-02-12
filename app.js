@@ -311,6 +311,18 @@ const MatchaYetiLeaderboard = () => {
     savePending(updatedPending);
   };
 
+  const deleteApprovedSubmission = (submissionId) => {
+    const submission = submissions.find(s => s.id === submissionId);
+    const confirmation = prompt(`Type "DELETE" to confirm removal of ${submission?.username}'s post:`);
+    if (confirmation === 'DELETE') {
+      const updatedApproved = submissions.filter(s => s.id !== submissionId);
+      saveSubmissions(updatedApproved);
+      alert('✅ Submission deleted!');
+    } else if (confirmation !== null) {
+      alert('❌ Deletion cancelled. You must type "DELETE" exactly.');
+    }
+  };
+
   const runRaffle = () => {
     const userScores = getUserLeaderboard();
     const eligibleUsers = userScores.filter(
@@ -527,6 +539,7 @@ const MatchaYetiLeaderboard = () => {
                     ...expandedUsers,
                     [user.username]: !expandedUsers[user.username]
                   })}
+                  onDelete={deleteApprovedSubmission}
                 />
               ))
             )}
@@ -762,7 +775,7 @@ const MatchaYetiLeaderboard = () => {
   );
 };
 
-const UserSubmissionsCard = ({ user, expanded, onToggle }) => {
+const UserSubmissionsCard = ({ user, expanded, onToggle, onDelete }) => {
   return (
     <div style={{background: '#f0fdf4', border: '2px solid #86efac', borderRadius: '8px', padding: '16px', marginBottom: '12px'}}>
       <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer'}} onClick={onToggle}>
@@ -790,9 +803,20 @@ const UserSubmissionsCard = ({ user, expanded, onToggle }) => {
                 {post.hasYeti && <span style={{fontSize: '10px', background: '#86efac', padding: '2px 6px', borderRadius: '4px'}}>🏔️ Yeti</span>}
                 {post.isCreative && <span style={{fontSize: '10px', background: '#e9d5ff', padding: '2px 6px', borderRadius: '4px'}}>⚡ Creative</span>}
               </div>
-              <a href={post.postUrl} target="_blank" rel="noopener noreferrer" style={{color: '#16a34a', fontSize: '11px'}}>
-                View Post →
-              </a>
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                <a href={post.postUrl} target="_blank" rel="noopener noreferrer" style={{color: '#16a34a', fontSize: '11px'}}>
+                  View Post →
+                </a>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(post.id);
+                  }}
+                  style={{background: '#dc2626', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer'}}
+                >
+                  🗑️ Delete
+                </button>
+              </div>
             </div>
           ))}
         </div>
