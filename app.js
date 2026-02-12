@@ -163,6 +163,14 @@ const styles = {
   }
 };
 
+const getLeaderboardColor = (index) => {
+  if (index === 0) return { bg: '#166534', border: '#14532d' }; // Dark green #1
+  if (index === 1) return { bg: '#16a34a', border: '#15803d' }; // Medium green #2
+  if (index === 2) return { bg: '#22c55e', border: '#16a34a' }; // Bright green #3
+  if (index < 10) return { bg: '#86efac', border: '#4ade80' }; // Light green #4-10
+  return { bg: 'white', border: '#d1fae5' }; // White #11+
+};
+
 const MatchaYetiLeaderboard = () => {
   const [view, setView] = useState('landing');
   const [submissions, setSubmissions] = useState([]);
@@ -173,6 +181,7 @@ const MatchaYetiLeaderboard = () => {
   const [showRaffleAnimation, setShowRaffleAnimation] = useState(false);
   const [postUrl, setPostUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [expandedUsers, setExpandedUsers] = useState({});
 
   useEffect(() => {
     loadData();
@@ -286,12 +295,13 @@ const MatchaYetiLeaderboard = () => {
   };
 
   const runRaffle = () => {
-    const eligibleSubmissions = submissions.filter(
-      sub => !raffleWinners.find(w => w.id === sub.id)
+    const userScores = getUserLeaderboard();
+    const eligibleUsers = userScores.filter(
+      user => !raffleWinners.find(w => w.username === user.username)
     );
     
-    if (eligibleSubmissions.length === 0) {
-      alert('No eligible submissions! All participants have already won.');
+    if (eligibleUsers.length === 0) {
+      alert('No eligible participants! All users have already won.');
       return;
     }
     
@@ -300,8 +310,8 @@ const MatchaYetiLeaderboard = () => {
     let selectedWinner = null;
     
     const interval = setInterval(() => {
-      const randomIndex = Math.floor(Math.random() * eligibleSubmissions.length);
-      selectedWinner = eligibleSubmissions[randomIndex];
+      const randomIndex = Math.floor(Math.random() * eligibleUsers.length);
+      selectedWinner = eligibleUsers[randomIndex];
       count++;
       
       if (count > 20) {
@@ -328,7 +338,34 @@ const MatchaYetiLeaderboard = () => {
     }
   };
 
-  const leaderboard = [...submissions].sort((a, b) => b.points - a.points).slice(0, 10);
+  const getUserLeaderboard = () => {
+    const userMap = {};
+    
+    submissions.forEach(sub => {
+      if (!userMap[sub.username]) {
+        userMap[sub.username] = {
+          username: sub.username,
+          totalPoints: 0,
+          posts: [],
+          hasYeti: false,
+          isCreative: false
+        };
+      }
+      
+      userMap[sub.username].totalPoints += sub.points;
+      userMap[sub.username].posts.push(sub);
+      if (sub.hasYeti) userMap[sub.username].hasYeti = true;
+      if (sub.isCreative) userMap[sub.username].isCreative = true;
+    });
+    
+    return Object.values(userMap).sort((a, b) => b.totalPoints - a.totalPoints);
+  };
+
+  const getUserPosts = (username) => {
+    return submissions.filter(sub => sub.username === username);
+  };
+
+  const leaderboard = getUserLeaderboard();
 
   if (view === 'admin' && !isAdmin) {
     return (
@@ -341,6 +378,11 @@ const MatchaYetiLeaderboard = () => {
             onChange={(e) => setAdminPassword(e.target.value)}
             placeholder="Enter admin password"
             style={styles.input}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter' && adminPassword === 'yeti2026') {
+                setIsAdmin(true);
+              }
+            }}
           />
           <button
             onClick={() => {
@@ -366,6 +408,8 @@ const MatchaYetiLeaderboard = () => {
   }
 
   if (view === 'admin' && isAdmin) {
+    const userGroups = getUserLeaderboard();
+    
     return (
       <div style={styles.container}>
         <nav style={styles.nav}>
@@ -379,7 +423,7 @@ const MatchaYetiLeaderboard = () => {
           </div>
         </nav>
         
-        <div style={{maxWidth: '900px', margin: '0 auto', padding: '24px 16px'}}>
+        <div style={{maxWidth: '900px', margin: '0 auto', padding: '24px 16px 80px'}}>
           <h1 style={{fontSize: '28px', fontWeight: 'bold', color: 'white', marginBottom: '24px', textAlign: 'center'}}>🏔️ Yeti Command Center</h1>
 
           <div style={{...styles.card, background: '#f0fdf4'}}>
@@ -394,11 +438,11 @@ const MatchaYetiLeaderboard = () => {
                   🎉 Winners ({raffleWinners.length}):
                 </h4>
                 {raffleWinners.map((winner, index) => (
-                  <div key={winner.id} style={{padding: '12px', background: 'white', borderRadius: '8px', border: '2px solid #16a34a', marginBottom: '8px'}}>
+                  <div key={index} style={{padding: '12px', background: 'white', borderRadius: '8px', border: '2px solid #16a34a', marginBottom: '8px'}}>
                     <p style={{fontSize: '18px', fontWeight: 'bold', color: '#16a34a'}}>
                       Winner #{index + 1}: {winner.username}
                     </p>
-                    <p style={{fontSize: '14px', color: '#6b7280'}}>{winner.points} points</p>
+                    <p style={{fontSize: '14px', color: '#6b7280'}}>{winner.totalPoints} total points</p>
                   </div>
                 ))}
               </div>
@@ -416,7 +460,7 @@ const MatchaYetiLeaderboard = () => {
           <div style={{...styles.card, background: '#fee2e2', borderColor: '#dc2626'}}>
             <h3 style={{fontSize: '18px', fontWeight: 'bold', color: '#dc2626', marginBottom: '12px'}}>⚠️ Danger Zone</h3>
             <p style={{fontSize: '13px', color: '#7f1d1d', marginBottom: '12px'}}>
-              Reset all data (submissions, winners, pending entries). This cannot be undone!
+              Reset all data (submissions, winners, pending entries). Requires code: RESET2026
             </p>
             <button
               onClick={resetAllData}
@@ -434,40 +478,48 @@ const MatchaYetiLeaderboard = () => {
               <p style={{color: '#6b7280'}}>No pending submissions</p>
             ) : (
               <div>
-                {pendingSubmissions.map((sub) => (
-                  <PendingSubmissionCard
-                    key={sub.id}
-                    submission={sub}
-                    onApprove={approveSubmission}
-                    onReject={rejectSubmission}
-                  />
-                ))}
+                {pendingSubmissions.map((sub) => {
+                  const userPastPosts = getUserPosts(sub.username);
+                  return (
+                    <PendingSubmissionCard
+                      key={sub.id}
+                      submission={sub}
+                      pastPosts={userPastPosts}
+                      onApprove={approveSubmission}
+                      onReject={rejectSubmission}
+                    />
+                  );
+                })}
               </div>
             )}
           </div>
 
           <div style={styles.card}>
             <h3 style={{fontSize: '18px', fontWeight: 'bold', color: '#166534', marginBottom: '16px'}}>
-              Approved Submissions ({submissions.length})
+              Approved Users ({userGroups.length})
             </h3>
-            {submissions.length === 0 ? (
+            {userGroups.length === 0 ? (
               <p style={{color: '#6b7280'}}>No approved submissions yet</p>
             ) : (
-              submissions.map((sub) => (
-                <div key={sub.id} style={{padding: '12px', background: '#f0fdf4', borderRadius: '8px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                  <div>
-                    <p style={{fontWeight: '600', color: '#166534', fontSize: '14px'}}>{sub.username}</p>
-                    <p style={{fontSize: '12px', color: '#6b7280'}}>
-                      {sub.points} pts {sub.hasYeti && '🏔️'} {sub.isCreative && '⚡'}
-                    </p>
-                  </div>
-                  <a href={sub.postUrl} target="_blank" rel="noopener noreferrer" style={{color: '#16a34a', fontSize: '12px'}}>
-                    View →
-                  </a>
-                </div>
+              userGroups.map((user) => (
+                <UserSubmissionsCard
+                  key={user.username}
+                  user={user}
+                  expanded={expandedUsers[user.username]}
+                  onToggle={() => setExpandedUsers({
+                    ...expandedUsers,
+                    [user.username]: !expandedUsers[user.username]
+                  })}
+                />
               ))
             )}
           </div>
+        </div>
+
+        <div style={styles.footer}>
+          <button onClick={() => setView('landing')} style={styles.adminLink}>
+            ← Back to Site
+          </button>
         </div>
       </div>
     );
@@ -500,39 +552,47 @@ const MatchaYetiLeaderboard = () => {
               </div>
             ) : (
               <div>
-                {leaderboard.map((sub, index) => (
-                  <div
-                    key={sub.id}
-                    style={{
-                      padding: '16px',
-                      borderRadius: '8px',
-                      marginBottom: '12px',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      background: index === 0 ? '#fef3c7' : index === 1 ? '#f3f4f6' : index === 2 ? '#fed7aa' : 'white',
-                      border: '2px solid',
-                      borderColor: index === 0 ? '#fbbf24' : index === 1 ? '#9ca3af' : index === 2 ? '#fb923c' : '#d1fae5'
-                    }}
-                  >
-                    <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-                      <div style={{fontSize: '24px', fontWeight: 'bold', color: '#166534', minWidth: '36px'}}>
-                        #{index + 1}
-                      </div>
-                      <div>
-                        <p style={{fontSize: '16px', fontWeight: 'bold', color: '#166534'}}>{sub.username}</p>
-                        <div style={{display: 'flex', gap: '6px', marginTop: '4px', flexWrap: 'wrap'}}>
-                          {sub.hasYeti && <span style={{fontSize: '10px', background: '#86efac', padding: '2px 6px', borderRadius: '4px'}}>Yeti</span>}
-                          {sub.isCreative && <span style={{fontSize: '10px', background: '#e9d5ff', padding: '2px 6px', borderRadius: '4px'}}>Creative</span>}
+                {leaderboard.map((user, index) => {
+                  const colors = getLeaderboardColor(index);
+                  const textColor = index < 3 ? 'white' : '#166534';
+                  
+                  return (
+                    <div
+                      key={user.username}
+                      style={{
+                        padding: '16px',
+                        borderRadius: '8px',
+                        marginBottom: '12px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        background: colors.bg,
+                        border: '2px solid',
+                        borderColor: colors.border
+                      }}
+                    >
+                      <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                        <div style={{fontSize: '24px', fontWeight: 'bold', color: textColor, minWidth: '36px'}}>
+                          #{index + 1}
+                        </div>
+                        <div>
+                          <p style={{fontSize: '16px', fontWeight: 'bold', color: textColor}}>{user.username}</p>
+                          <div style={{display: 'flex', gap: '6px', marginTop: '4px', flexWrap: 'wrap'}}>
+                            <span style={{fontSize: '10px', background: 'rgba(255,255,255,0.3)', padding: '2px 6px', borderRadius: '4px', color: textColor}}>
+                              {user.posts.length} post{user.posts.length > 1 ? 's' : ''}
+                            </span>
+                            {user.hasYeti && <span style={{fontSize: '10px', background: 'rgba(255,255,255,0.3)', padding: '2px 6px', borderRadius: '4px', color: textColor}}>🏔️</span>}
+                            {user.isCreative && <span style={{fontSize: '10px', background: 'rgba(255,255,255,0.3)', padding: '2px 6px', borderRadius: '4px', color: textColor}}>⚡</span>}
+                          </div>
                         </div>
                       </div>
+                      <div style={{textAlign: 'right'}}>
+                        <p style={{fontSize: '24px', fontWeight: 'bold', color: textColor}}>{user.totalPoints}</p>
+                        <p style={{fontSize: '11px', color: textColor, opacity: 0.8}}>pts</p>
+                      </div>
                     </div>
-                    <div style={{textAlign: 'right'}}>
-                      <p style={{fontSize: '24px', fontWeight: 'bold', color: '#16a34a'}}>{sub.points}</p>
-                      <p style={{fontSize: '11px', color: '#6b7280'}}>pts</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -659,7 +719,8 @@ const MatchaYetiLeaderboard = () => {
           <div style={{background: '#f0fdf4', borderRadius: '12px', padding: '14px', marginTop: '16px', border: '1px solid #86efac'}}>
             <p style={{fontSize: '14px', fontStyle: 'italic', color: '#166534', lineHeight: '1.5'}}>
               More points = Better odds in the raffle<br/>
-              Top 10 highest scores win Balaclava ski hats
+              Top 10 highest scores win Balaclava ski hats<br/>
+              Submit multiple posts to increase your chances!
             </p>
           </div>
         </div>
@@ -685,7 +746,46 @@ const MatchaYetiLeaderboard = () => {
   );
 };
 
-const PendingSubmissionCard = ({ submission, onApprove, onReject }) => {
+const UserSubmissionsCard = ({ user, expanded, onToggle }) => {
+  return (
+    <div style={{background: '#f0fdf4', border: '2px solid #86efac', borderRadius: '8px', padding: '16px', marginBottom: '12px'}}>
+      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer'}} onClick={onToggle}>
+        <div>
+          <p style={{fontWeight: 'bold', color: '#166534', fontSize: '16px'}}>{user.username}</p>
+          <p style={{fontSize: '14px', color: '#6b7280'}}>
+            Total: {user.totalPoints} pts • {user.posts.length} post{user.posts.length > 1 ? 's' : ''}
+          </p>
+        </div>
+        <div style={{fontSize: '20px', color: '#166534'}}>{expanded ? '▼' : '▶'}</div>
+      </div>
+      
+      {expanded && (
+        <div style={{marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #86efac'}}>
+          {user.posts.map((post, index) => (
+            <div key={post.id} style={{background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', fontSize: '12px'}}>
+              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '4px'}}>
+                <span style={{fontWeight: 'bold'}}>Post #{index + 1}</span>
+                <span style={{fontWeight: 'bold', color: '#16a34a'}}>{post.points} pts</span>
+              </div>
+              <p style={{color: '#6b7280', fontSize: '11px', marginBottom: '4px'}}>
+                {new Date(post.timestamp).toLocaleString()}
+              </p>
+              <div style={{display: 'flex', gap: '6px', marginBottom: '6px'}}>
+                {post.hasYeti && <span style={{fontSize: '10px', background: '#86efac', padding: '2px 6px', borderRadius: '4px'}}>🏔️ Yeti</span>}
+                {post.isCreative && <span style={{fontSize: '10px', background: '#e9d5ff', padding: '2px 6px', borderRadius: '4px'}}>⚡ Creative</span>}
+              </div>
+              <a href={post.postUrl} target="_blank" rel="noopener noreferrer" style={{color: '#16a34a', fontSize: '11px'}}>
+                View Post →
+              </a>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PendingSubmissionCard = ({ submission, pastPosts, onApprove, onReject }) => {
   const [hasYeti, setHasYeti] = useState(false);
   const [isCreative, setIsCreative] = useState(false);
 
@@ -697,8 +797,21 @@ const PendingSubmissionCard = ({ submission, onApprove, onReject }) => {
           View Post →
         </a>
         <p style={{fontSize: '11px', color: '#6b7280', marginTop: '4px'}}>
-          {new Date(submission.timestamp).toLocaleString()}
+          Submitted: {new Date(submission.timestamp).toLocaleString()}
         </p>
+        
+        {pastPosts.length > 0 && (
+          <div style={{marginTop: '8px', padding: '8px', background: '#fef3c7', borderRadius: '6px'}}>
+            <p style={{fontSize: '11px', fontWeight: 'bold', color: '#92400e', marginBottom: '4px'}}>
+              📋 Past approved posts: {pastPosts.length}
+            </p>
+            {pastPosts.map((post, i) => (
+              <p key={post.id} style={{fontSize: '10px', color: '#92400e', marginBottom: '2px'}}>
+                • {post.points} pts - {new Date(post.timestamp).toLocaleDateString()}
+              </p>
+            ))}
+          </div>
+        )}
       </div>
 
       <div style={{display: 'flex', gap: '12px', marginBottom: '12px', flexWrap: 'wrap'}}>
