@@ -47,7 +47,8 @@ const styles = {
     padding: '12px 16px',
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
+    flexDirection: 'row-reverse'
   },
   navButton: {
     color: '#16a34a',
