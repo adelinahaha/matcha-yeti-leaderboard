@@ -4,15 +4,35 @@ const Check = () => <span style={{fontSize: '20px'}}>✓</span>;
 const X = () => <span style={{fontSize: '20px'}}>✕</span>;
 const Shuffle = () => <span style={{fontSize: '20px'}}>🔀</span>;
 
+// Storage adapter - uses localStorage instead of window.storage
+const storage = {
+  get: (key) => {
+    try {
+      const value = localStorage.getItem(key);
+      return value ? { value } : null;
+    } catch {
+      return null;
+    }
+  },
+  set: (key, value) => {
+    try {
+      localStorage.setItem(key, value);
+      return { value };
+    } catch {
+      return null;
+    }
+  }
+};
+
 const styles = {
   container: {
     minHeight: '100vh',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-    backgroundImage: 'url(https://i.imgur.com/D6OZc8F.jpeg)',
+    backgroundImage: 'url(https://res.cloudinary.com/dijzl4dmq/image/upload/v1770894642/Frame_1000005429_stqrl7.jpg)',
     backgroundSize: 'cover',
     backgroundPosition: 'top center',
     backgroundRepeat: 'no-repeat',
-    backgroundColor: '#4ade80'
+    backgroundColor: '#7c3aed'
   },
   nav: {
     background: 'white',
@@ -143,10 +163,10 @@ const MatchaYetiLeaderboard = () => {
     loadData();
   }, []);
 
-  const loadData = async () => {
+  const loadData = () => {
     try {
-      const subsResult = await window.storage.get('approved-submissions');
-      const pendingResult = await window.storage.get('pending-submissions');
+      const subsResult = storage.get('approved-submissions');
+      const pendingResult = storage.get('pending-submissions');
       
       if (subsResult?.value) {
         setSubmissions(JSON.parse(subsResult.value));
@@ -159,18 +179,18 @@ const MatchaYetiLeaderboard = () => {
     }
   };
 
-  const saveSubmissions = async (subs) => {
+  const saveSubmissions = (subs) => {
     try {
-      await window.storage.set('approved-submissions', JSON.stringify(subs));
+      storage.set('approved-submissions', JSON.stringify(subs));
       setSubmissions(subs);
     } catch (error) {
       console.error('Failed to save:', error);
     }
   };
 
-  const savePending = async (pending) => {
+  const savePending = (pending) => {
     try {
-      await window.storage.set('pending-submissions', JSON.stringify(pending));
+      storage.set('pending-submissions', JSON.stringify(pending));
       setPendingSubmissions(pending);
     } catch (error) {
       console.error('Failed to save:', error);
@@ -212,7 +232,7 @@ const MatchaYetiLeaderboard = () => {
     alert('✅ You\'re in the raffle!\n\nYour entry has been submitted and is being reviewed by the Yeti itself.\n\nRaffle winner announced:\n📅 February 20 at 3pm\n📍 At the Matcha Garden\n\nGood luck! 🍀');
   };
 
-  const approveSubmission = async (submission, hasYeti, isCreative) => {
+  const approveSubmission = (submission, hasYeti, isCreative) => {
     let points = 10;
     if (hasYeti) points = 20;
     if (isCreative) points += 20;
@@ -228,13 +248,13 @@ const MatchaYetiLeaderboard = () => {
     const updatedApproved = [...submissions, approved];
     const updatedPending = pendingSubmissions.filter(s => s.id !== submission.id);
     
-    await saveSubmissions(updatedApproved);
-    await savePending(updatedPending);
+    saveSubmissions(updatedApproved);
+    savePending(updatedPending);
   };
 
-  const rejectSubmission = async (submissionId) => {
+  const rejectSubmission = (submissionId) => {
     const updatedPending = pendingSubmissions.filter(s => s.id !== submissionId);
-    await savePending(updatedPending);
+    savePending(updatedPending);
   };
 
   const runRaffle = () => {
@@ -259,10 +279,9 @@ const MatchaYetiLeaderboard = () => {
 
   const leaderboard = [...submissions].sort((a, b) => b.points - a.points).slice(0, 10);
 
-  // ADMIN LOGIN
   if (view === 'admin' && !isAdmin) {
     return (
-      <div style={{...styles.container, padding: '40px 16px', background: 'linear-gradient(to bottom, #f0fdf4, #ffffff)'}}>
+      <div style={{...styles.container, padding: '40px 16px'}}>
         <div style={{maxWidth: '400px', margin: '0 auto', ...styles.card}}>
           <h2 style={{fontSize: '24px', fontWeight: 'bold', color: '#166534', marginBottom: '20px', textAlign: 'center'}}>🏔️ Yeti Command Center</h2>
           <input
@@ -295,14 +314,13 @@ const MatchaYetiLeaderboard = () => {
     );
   }
 
-  // ADMIN PANEL
   if (view === 'admin' && isAdmin) {
     return (
-      <div style={{...styles.container, background: 'linear-gradient(to bottom, #f0fdf4, #ffffff)'}}>
+      <div style={{...styles.container}}>
         <nav style={styles.nav}>
           <div style={styles.navInner}>
             <a href="https://matcha.xyz/" target="_blank" rel="noopener noreferrer">
-              <img src="https://i.imgur.com/MdOOrcp.png" alt="matcha.xyz" style={{height: '32px'}} />
+              <img src="https://res.cloudinary.com/dijzl4dmq/image/upload/v1770894649/Matcha-lockup-green_1_wdii0l.png" alt="matcha.xyz" style={{height: '32px'}} />
             </a>
             <button onClick={() => { setView('landing'); setIsAdmin(false); }} style={styles.navButton}>Exit Admin</button>
           </div>
@@ -370,14 +388,13 @@ const MatchaYetiLeaderboard = () => {
     );
   }
 
-  // LEADERBOARD
   if (view === 'leaderboard') {
     return (
-      <div style={{...styles.container, backgroundImage: 'url(https://i.imgur.com/vuYDe2J.jpeg)', backgroundSize: 'cover', backgroundPosition: 'center', minHeight: '100vh'}}>
+      <div style={styles.container}>
         <nav style={styles.nav}>
           <div style={styles.navInner}>
             <a href="https://matcha.xyz/" target="_blank" rel="noopener noreferrer">
-              <img src="https://i.imgur.com/MdOOrcp.png" alt="matcha.xyz" style={{height: '32px'}} />
+              <img src="https://res.cloudinary.com/dijzl4dmq/image/upload/v1770894649/Matcha-lockup-green_1_wdii0l.png" alt="matcha.xyz" style={{height: '32px'}} />
             </a>
             <button onClick={() => setView('landing')} style={{...styles.navButton, fontSize: '16px', fontWeight: 'bold'}}>Home</button>
           </div>
@@ -437,7 +454,6 @@ const MatchaYetiLeaderboard = () => {
     );
   }
 
-  // LANDING PAGE
   return (
     <div style={styles.container}>
       <nav style={styles.nav}>
@@ -452,7 +468,6 @@ const MatchaYetiLeaderboard = () => {
         </div>
       </nav>
 
-      {/* HERO */}
       <div style={styles.hero}>
         <div style={styles.heroCard}>
           <h1 style={styles.title}>
@@ -473,9 +488,7 @@ const MatchaYetiLeaderboard = () => {
         </div>
       </div>
 
-      {/* MAIN CONTENT */}
       <div style={styles.mainContent}>
-        {/* PRIZES */}
         <div style={{...styles.card, marginTop: '24px'}}>
           <h2 style={{fontSize: '24px', fontWeight: 'bold', textAlign: 'center', marginBottom: '20px'}}>Everything you can win</h2>
           
@@ -506,7 +519,6 @@ const MatchaYetiLeaderboard = () => {
           </div>
         </div>
 
-        {/* ENTER THE RAFFLE */}
         <div style={styles.card}>
           <h2 style={{fontSize: '24px', fontWeight: 'bold', textAlign: 'center', marginBottom: '16px'}}>Enter the raffle</h2>
           
@@ -551,13 +563,19 @@ const MatchaYetiLeaderboard = () => {
               ⚡ Extra creative = +20 bonus pts
             </p>
           </div>
+
+          <div style={{background: '#f0fdf4', borderRadius: '12px', padding: '14px', marginTop: '16px', border: '1px solid #86efac'}}>
+            <p style={{fontSize: '14px', fontStyle: 'italic', color: '#166534', lineHeight: '1.5'}}>
+              More points = Better odds in the raffle<br/>
+              Top 10 highest scores win Balaclava ski hats
+            </p>
+          </div>
         </div>
 
-        {/* WINNER ANNOUNCEMENT */}
-        <div style={{...styles.card, background: 'linear-gradient(to right, #15803d, #166534)', color: 'white', textAlign: 'center'}}>
-          <h3 style={{fontSize: '16px', fontWeight: 'bold', marginBottom: '8px', color: '#86efac'}}>WINNER ANNOUNCED ON</h3>
-          <p style={{fontSize: '32px', fontWeight: '900', marginBottom: '20px'}}>FEB 20</p>
-          <p style={{fontSize: '18px', fontWeight: 'bold', marginBottom: '20px'}}>Claim your prize at the<br/>Matcha Garden</p>
+        <div id="intel-section" style={{...styles.card, background: 'linear-gradient(to right, #15803d, #166534)', color: 'white', textAlign: 'center'}}>
+          <h3 style={{fontSize: '20px', fontWeight: 'bold', marginBottom: '16px', color: '#86efac'}}>WINNER ANNOUNCEMENT</h3>
+          <p style={{fontSize: '32px', fontWeight: '900', marginBottom: '12px'}}>February 20 at 3pm</p>
+          <p style={{fontSize: '16px', marginBottom: '20px'}}>Claim your prize at the Matcha Garden</p>
           <div style={{height: '1px', background: 'rgba(134, 239, 172, 0.3)', margin: '20px 0'}}></div>
           <p style={{fontSize: '13px', color: '#a7f3d0', marginBottom: '6px'}}>Questions or Updates?</p>
           <a href="https://x.com/matchaxyz" target="_blank" rel="noopener noreferrer" style={{fontSize: '16px', fontWeight: 'bold', color: '#86efac', textDecoration: 'none'}}>
