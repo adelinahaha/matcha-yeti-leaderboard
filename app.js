@@ -802,13 +802,16 @@ const PendingSubmissionCard = ({ submission, pastPosts, onApprove, onReject }) =
         
         {pastPosts.length > 0 && (
           <div style={{marginTop: '8px', padding: '8px', background: '#fef3c7', borderRadius: '6px'}}>
-            <p style={{fontSize: '11px', fontWeight: 'bold', color: '#92400e', marginBottom: '4px'}}>
+            <p style={{fontSize: '11px', fontWeight: 'bold', color: '#92400e', marginBottom: '6px'}}>
               📋 Past approved posts: {pastPosts.length}
             </p>
             {pastPosts.map((post, i) => (
-              <p key={post.id} style={{fontSize: '10px', color: '#92400e', marginBottom: '2px'}}>
-                • {post.points} pts - {new Date(post.timestamp).toLocaleDateString()}
-              </p>
+              <div key={post.id} style={{fontSize: '10px', color: '#92400e', marginBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                <span>• {post.points} pts - {new Date(post.timestamp).toLocaleDateString()}</span>
+                <a href={post.postUrl} target="_blank" rel="noopener noreferrer" style={{color: '#92400e', textDecoration: 'underline', fontSize: '10px'}}>
+                  View →
+                </a>
+              </div>
             ))}
           </div>
         )}
